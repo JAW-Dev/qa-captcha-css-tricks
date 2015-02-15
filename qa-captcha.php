@@ -9,14 +9,14 @@
  *
  * @wordpress-plugin
  * Plugin Name:       QA Captcha
- * Plugin URI:        https://github.com/jawittdesigns/
+ * Plugin URI:        https://github.com/jawittdesigns/QA-Captcha
  * Description:       A question and answer captcha
  * Version:           1.0.0
  * Author:            Jason Witt
  * Author URI:        http://jawittdesigns.com
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * Text Domain:       
+ * Text Domain:       qac
  * Domain Path:       /languages
  */ 
 

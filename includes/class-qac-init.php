@@ -30,7 +30,7 @@ class QA_Captcha_Init {
 		$this->array = get_option( 'qac_options' );
 		add_action( 'init', array( $this, 'load_filters'), 1);
 		add_filter( 'shake_error_codes', array( $this, 'add_shake_error_codes' ), 1);
-		add_action( 'login_form', array( $this, 'display_field' ) );
+		add_action( 'register_form', array( $this, 'display_field' ) );
 	}
 
 	/**
@@ -41,7 +41,9 @@ class QA_Captcha_Init {
 	 * @return void
 	 */
 	public function load_filters() {
-		add_filter( 'authenticate', array( $this, 'authenticate_answer' ), 10, 3 );
+		if( get_option( 'qac_options' ) ) {
+			add_filter( 'registration_errors', array( $this, 'authenticate_answer' ), 10, 3 );
+		}
 	}
 
 	/**
@@ -53,7 +55,10 @@ class QA_Captcha_Init {
 	 */
 	private function randomize_option() {
 		$array = $this->array['qac_repeat_group'];
-		$selection = array_rand( $array, 1 );
+		$selection = '';
+		if( is_array( $array ) ) {
+			$selection = array_rand( $array, 1 );
+		}
 		return $array[$selection];
 	}
 
@@ -86,22 +91,15 @@ class QA_Captcha_Init {
 	 * @param  string $password the password
 	 * @return obj           the user object
 	 */
-	public function authenticate_answer( $user, $username, $password ) {
+	public function authenticate_answer( $errors ) {
 		$error = get_option( 'qac_error' );
 		$option = $this->randomize_option();
-		$user = get_user_by( 'login', $username );
 		$value = strtolower( trim( $option['qac_answer'] ) );
-		if( !is_wp_error( $user ) ) {
-			if( !empty( $_POST ) ) {
-				if( empty( $_POST['qac_question'] ) || strtolower( trim( $_POST['qac_question'] ) ) !== $value ) {
-					remove_action('authenticate', 'wp_authenticate_username_password', 20 );
-					wp_clear_auth_cookie();
-					$user = new WP_Error();
-					$user->add( 'qac-error', $this->error_message() );
-				}
-			}
+		if( empty( $_POST['qac_question'] ) || strtolower( trim( $_POST['qac_question'] ) ) !== $value ) {
+			$errors->add( 'qac-error', $this->error_message() );
+			
 		}
-		return $user;
+		return $errors;
 	}
 
 	/**
@@ -112,7 +110,7 @@ class QA_Captcha_Init {
 	 * @return string the custom error message
 	 */
 	private function error_message() {
-		$message = __('<strong>ERROR</strong>: Invalid username, incorrect password or incorrect answer.' );
+		$message = __('<strong>ERROR</strong>: Incorrect answer.' );
 		return $message;
 	}
 

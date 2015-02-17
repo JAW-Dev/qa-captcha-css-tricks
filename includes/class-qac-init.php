@@ -63,7 +63,7 @@ class QA_Captcha_Init {
 	}
 
 	/**
-	 * Display the question and answer field on the login form
+	 * Display the question and answer field on the registration form
 	 *
 	 * @since  1.0.0
 	 * @access public

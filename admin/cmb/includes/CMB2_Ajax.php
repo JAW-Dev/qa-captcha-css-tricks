@@ -1,13 +1,17 @@
 <?php
 
 /**
- * CMB ajax methods
+ * CMB2 ajax methods
  * (i.e. a lot of work to get oEmbeds to work with non-post objects)
  *
  * @since  0.9.5
+ *
+ * @category  WordPress_Plugin
+ * @package   CMB2
+ * @author    WebDevStudios
+ * @license   GPL-2.0+
  */
 class CMB2_Ajax {
-
 
 	// Whether to hijack the oembed cache system
 	protected $hijack      = false;
@@ -16,6 +20,30 @@ class CMB2_Ajax {
 	protected $object_type = 'post';
 	protected $ajax_update = false;
 
+	/**
+	 * Constructor
+	 * @since 2.2.0
+	 */
+	public function __construct() {
+		self::hooks( $this );
+	}
+
+	/**
+	 * Hook in the oembed ajax handlers
+	 * @since  2.2.0
+	 * @param  CMB2_Ajax  $self This object (for hooking)
+	 */
+	public static function hooks( $self ) {
+		static $hooked = false;
+
+		if ( ! $hooked ) {
+			add_action( 'wp_ajax_cmb2_oembed_handler', array( $self, 'oembed_handler' ) );
+			add_action( 'wp_ajax_nopriv_cmb2_oembed_handler', array( $self, 'oembed_handler' ) );
+			// Need to occasionally clean stale oembed cache data from the option value.
+			add_action( 'cmb2_save_options-page_fields', array( __CLASS__, 'clean_stale_options_page_oembeds' ) );
+			$hooked = true;
+		}
+	}
 
 	/**
 	 * Handles our oEmbed ajax request
@@ -34,7 +62,7 @@ class CMB2_Ajax {
 
 		// Send back error if empty
 		if ( empty( $oembed_string ) ) {
-			wp_send_json_error( '<p class="ui-state-error-text">'. __( 'Please Try Again', 'cmb2' ) .'</p>' );
+			wp_send_json_error( '<p class="ui-state-error-text">' . __( 'Please Try Again', 'cmb2' ) . '</p>' );
 		}
 
 		// Set width of embed
@@ -60,7 +88,6 @@ class CMB2_Ajax {
 		wp_send_json_success( $html );
 	}
 
-
 	/**
 	 * Retrieves oEmbed from url/object ID
 	 * @since  0.9.5
@@ -80,11 +107,9 @@ class CMB2_Ajax {
 			'object_type' => 'post',
 			'oembed_args' => $this->embed_args,
 			'field_id'    => false,
-			'cache_key'   => false,
 		) );
 
 		$this->embed_args =& $args;
-
 
 		/**
 		 * Set the post_ID so oEmbed won't fail
@@ -99,9 +124,6 @@ class CMB2_Ajax {
 
 				// Bogus id to pass some numeric checks. Issue with a VERY large WP install?
 				$wp_embed->post_ID = 1987645321;
-
-				// Use our own cache key to correspond to this field (vs one cache key per url)
-				$args['cache_key'] = $args['field_id'] . '_cache';
 			}
 
 			// Ok, we need to hijack the oembed cache system
@@ -138,7 +160,6 @@ class CMB2_Ajax {
 
 	}
 
-
 	/**
 	 * Hijacks retrieving of cached oEmbed.
 	 * Returns cached data from relevant object metadata (vs postmeta)
@@ -150,7 +171,6 @@ class CMB2_Ajax {
 	 * @return mixed              Object's oEmbed cached data
 	 */
 	public function hijack_oembed_cache_get( $check, $object_id, $meta_key ) {
-
 		if ( ! $this->hijack || ( $this->object_id != $object_id && 1987645321 !== $object_id ) ) {
 			return $check;
 		}
@@ -159,13 +179,8 @@ class CMB2_Ajax {
 			return false;
 		}
 
-		// Get cached data
-		return ( 'options-page' === $this->object_type )
-			? cmb2_options( $this->object_id )->get( $this->embed_args['cache_key'] )
-			: get_metadata( $this->object_type, $this->object_id, $meta_key, true );
-
+		return $this->cache_action( $meta_key );
 	}
-
 
 	/**
 	 * Hijacks saving of cached oEmbed.
@@ -180,30 +195,93 @@ class CMB2_Ajax {
 	 */
 	public function hijack_oembed_cache_set( $check, $object_id, $meta_key, $meta_value ) {
 
-		if ( ! $this->hijack || ( $this->object_id != $object_id && 1987645321 !== $object_id ) ) {
+		if (
+			! $this->hijack
+			|| ( $this->object_id != $object_id && 1987645321 !== $object_id )
+			// only want to hijack oembed meta values
+			|| 0 !== strpos( $meta_key, '_oembed_' )
+		) {
 			return $check;
 		}
 
-		$this->oembed_cache_set( $meta_key, $meta_value );
+		$this->cache_action( $meta_key, $meta_value );
 
 		// Anything other than `null` to cancel saving to postmeta
 		return true;
 	}
 
-
 	/**
-	 * Saves the cached oEmbed value to relevant object metadata (vs postmeta)
+	 * Gets/updates the cached oEmbed value from/to relevant object metadata (vs postmeta)
 	 *
 	 * @since  1.3.0
 	 * @param  string  $meta_key   Postmeta's key
-	 * @param  mixed   $meta_value Value of the postmeta to be saved
+	 * @param  mixed   $meta_value (Optional) value of the postmeta to be saved
 	 */
-	public function oembed_cache_set( $meta_key, $meta_value ) {
+	protected function cache_action( $meta_key ) {
+		$func_args = func_get_args();
+		$action    = isset( $func_args[1] ) ? 'update' : 'get';
 
-		// Cache the result to our metadata
-		return ( 'options-page' !== $this->object_type )
-			? update_metadata( $this->object_type, $this->object_id, $meta_key, $meta_value )
-			: cmb2_options( $this->object_id )->update( $this->embed_args['cache_key'], $meta_value, true );
+		if ( 'options-page' === $this->object_type ) {
+
+			$args = array( $meta_key );
+
+			if ( 'update' === $action ) {
+				$args[] = $func_args[1];
+				$args[] = true;
+			}
+
+			// Cache the result to our options
+			$status = call_user_func_array( array( cmb2_options( $this->object_id ), $action ), $args );
+		} else {
+
+			$args = array( $this->object_type, $this->object_id, $meta_key );
+			$args[] = 'update' === $action ? $func_args : true;
+
+			// Cache the result to our metadata
+			$status = call_user_func_array( $action . '_metadata', $args );
+		}
+
+		return $status;
+	}
+
+	/**
+	 * Hooks in when options-page data is saved to clean stale
+	 * oembed cache data from the option value.
+	 * @since  2.2.0
+	 * @param  string  $option_key The options-page option key
+	 * @return void
+	 */
+	public static function clean_stale_options_page_oembeds( $option_key ) {
+		$options = cmb2_options( $option_key )->get_options();
+		if ( is_array( $options ) ) {
+
+			$ttl = apply_filters( 'oembed_ttl', DAY_IN_SECONDS, '', array(), 0 );
+			$now = time();
+			$modified = false;
+
+			foreach ( $options as $key => $value ) {
+				// Check for cached oembed data
+				if ( 0 === strpos( $key, '_oembed_time_' ) ) {
+					$cached_recently = ( $now - $value ) < $ttl;
+
+					if ( ! $cached_recently ) {
+						$modified = true;
+						// Remove the the cached ttl expiration, and the cached oembed value.
+						unset( $options[ $key ] );
+						unset( $options[ str_replace( '_oembed_time_', '_oembed_', $key ) ] );
+					}
+				}
+				// Remove the cached unknown values
+				elseif ( '{{unknown}}' === $value ) {
+					$modified = true;
+					unset( $options[ $key ] );
+				}
+			}
+		}
+		// Update the option and remove stale cache data
+		if ( $modified ) {
+			$updated = cmb2_options( $option_key )->set( $options );
+		}
 	}
 
 }

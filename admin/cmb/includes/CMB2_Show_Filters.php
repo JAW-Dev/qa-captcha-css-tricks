@@ -1,13 +1,19 @@
 <?php
-
 /**
  * Show On Filters
- * Use the 'cmb2_show_on' filter to further refine the conditions under which a metabox is displayed.
+ * Use the 'cmb2_show_on' filter to further refine the conditions
+ * under which a metabox is displayed.
  * Below you can limit it by ID and page template
  *
  * All methods in this class are automatically filtered
  *
  * @since  1.0.0
+ *
+ * @category  WordPress_Plugin
+ * @package   CMB2
+ * @author    WebDevStudios
+ * @license   GPL-2.0+
+ * @link      http://webdevstudios.com
  */
 class CMB2_Show_Filters {
 
@@ -18,7 +24,7 @@ class CMB2_Show_Filters {
 	 *
 	 * @param  array $meta_box_args Metabox config array
 	 *
-	 * @return string|false         show_on key or false
+	 * @return mixed                show_on key or false
 	 */
 	private static function get_show_on_key( $meta_box_args ) {
 		$show_on = isset( $meta_box_args['show_on'] ) ? (array) $meta_box_args['show_on'] : false;

@@ -11,7 +11,7 @@
  * Plugin Name:       QA Captcha
  * Plugin URI:        https://github.com/jawittdesigns/QA-Captcha
  * Description:       A question and answer captcha
- * Version:           1.0.0
+ * Version:           1.1.0
  * Author:            Jason Witt
  * Author URI:        http://jawittdesigns.com
  * License:           GPL-2.0+
@@ -64,15 +64,11 @@ if( !class_exists( 'QA_Captcha' ) ) {
 		private function define_constants() {
 			// Plugin Version
 			if ( ! defined( 'QAC_VERSION' ) ) {
-				define( 'QAC_VERSION', '1.0.0' );
+				define( 'QAC_VERSION', '1.1.0' );
 			}
 			// Prefix
 			if ( ! defined( 'QAC_PREFIX' ) ) {
 				define( 'QAC_PREFIX', 'qac_' );
-			}
-			// Textdomain
-			if ( ! defined( 'QAC_TEXTDOMAIN' ) ) {
-				define( 'QAC_TEXTDOMAIN', 'qac' );
 			}
 			// Plugin Options
 			if ( ! defined( 'QAC_OPTIONS' ) ) {
@@ -112,19 +108,19 @@ if( !class_exists( 'QA_Captcha' ) ) {
 		 * @access public
 		 */
 		public function load_textdomain() {
-			$plugin_name_lang_dir = dirname( plugin_basename( QAC_PLUGIN_FILE ) ) . '/languages/';
-			$plugin_name_lang_dir = apply_filters( 'QAC_lang_dir', $plugin_name_lang_dir );
+			$qac_lang_dir = dirname( plugin_basename( QAC_PLUGIN_FILE ) ) . '/languages/';
+			$qac_lang_dir = apply_filters( 'QAC_lang_dir', $qac_lang_dir );
 
-			$locale = apply_filters( 'plugin_locale',  get_locale(), QAC_TEXTDOMAIN );
-			$mofile = sprintf( '%1$s-%2$s.mo', QAC_TEXTDOMAIN, $locale );
+			$locale = apply_filters( 'plugin_locale',  get_locale(), 'qac' );
+			$mofile = sprintf( '%1$s-%2$s.mo', 'qac', $locale );
 
-			$mofile_local  = $plugin_name_lang_dir . $mofile;
+			$mofile_local  = $qac_lang_dir . $mofile;
 			$mofile_global = WP_LANG_DIR . '/edd/' . $mofile;
 
 			if ( file_exists( $mofile_local ) ) {
-				load_textdomain( QAC_TEXTDOMAIN, $mofile_local );
+				load_textdomain( 'qac', $mofile_local );
 			} else {
-				load_plugin_textdomain( QAC_TEXTDOMAIN, false, $plugin_name_lang_dir );
+				load_plugin_textdomain( 'qac', false, $qac_lang_dir );
 			}
 		}
 
@@ -136,7 +132,7 @@ if( !class_exists( 'QA_Captcha' ) ) {
 		 * @return void
 		 */
 		public function __clone() {
-			_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', QAC_TEXTDOMAIN ), '1.6' );
+			_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'qac' ), '1.6' );
 		}
 
 		/**
@@ -147,7 +143,7 @@ if( !class_exists( 'QA_Captcha' ) ) {
 		 * @return void
 		 */
 		public function __wakeup() {
-			_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', QAC_TEXTDOMAIN ), '1.6' );
+			_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'qac' ), '1.6' );
 		}
 
 	}

@@ -46,15 +46,15 @@ class QAC_Options {
      * @since 0.1.0
      */
     public function __construct() {
-        $this->title = __( 'QA Captcha', QAC_TEXTDOMAIN );
+        $this->title = __( 'QA Captcha', 'qac' );
         $this->fields = array(
             array(
                 'id'          => QAC_PREFIX . 'repeat_group',
                 'type'        => 'group',
                 'options'     => array(
-                    'group_title'   => __( 'Question/Answer {#}', QAC_TEXTDOMAIN ), // {#} gets replaced by row number
-                    'add_button'    => __( 'Add Another QA', QAC_TEXTDOMAIN ),
-                    'remove_button' => __( 'Remove QA', QAC_TEXTDOMAIN ),
+                    'group_title'   => __( 'Question/Answer {#}', 'qac' ), // {#} gets replaced by row number
+                    'add_button'    => __( 'Add Another QA', 'qac' ),
+                    'remove_button' => __( 'Remove QA', 'qac' ),
                     'sortable'      => false, // beta                
                 ),
                 'fields'      => array(
